@@ -1,4 +1,4 @@
-# Biblioteca - Laravel MVC (Blade) Skeleton
+# Biblioteca - Laravel MVC (Blade)
 
 Projeto Laravel (MVC com Blade) para sistema de gestão de biblioteca.
 
