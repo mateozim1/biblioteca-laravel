@@ -1,8 +1,7 @@
 @extends('layouts.app')
-
 @section('title','Detalhes da Locação')
-
 @section('content')
+
 <h2>Locação #{{ $locacao->id }}</h2>
 <p><strong>Usuário:</strong> {{ $locacao->usuario->name ?? '—' }}</p>
 <p><strong>Livro:</strong> {{ $locacao->livro->titulo ?? '—' }}</p>
