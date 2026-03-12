@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Autor\AutorRequest;
 use App\Models\Autor;
-use Illuminate\Http\Request;
 
 class AutorController extends Controller
 {
@@ -18,43 +18,32 @@ class AutorController extends Controller
         return view('autores.create');
     }
 
-    public function store(Request $request)
+    public function store(AutorRequest $request)
     {
-        $data = $request->validate([
-            'nome' => 'required|string|max:255',
-            'nacionalidade' => 'nullable|string|max:100',
-        ]);
-
-        Autor::create($data);
+        Autor::create($request->validated());
         return redirect()->route('autores.index')->with('success', 'Autor criado com sucesso.');
     }
 
-    public function show($id)
+    public function show(Autor $autor)
     {
-        $autor = Autor::with('livros')->findOrFail($id);
+        $autor->load('livros');
         return view('autores.show', compact('autor'));
     }
 
-    public function edit($id)
+    public function edit(Autor $autor)
     {
-        $autor = Autor::findOrFail($id);
         return view('autores.edit', compact('autor'));
     }
 
-    public function update(Request $request, $id)
+    public function update(AutorRequest $request, Autor $autor)
     {
-        $autor = Autor::findOrFail($id);
-        $data = $request->validate([
-            'nome' => 'required|string|max:255',
-            'nacionalidade' => 'nullable|string|max:100',
-        ]);
-        $autor->update($data);
+        $autor->update($request->validated());
         return redirect()->route('autores.index')->with('success', 'Autor atualizado.');
     }
 
-    public function destroy($id)
+    public function destroy(Autor $autor)
     {
-        Autor::findOrFail($id)->delete();
+        $autor->delete();
         return redirect()->route('autores.index')->with('success', 'Autor removido.');
     }
 }

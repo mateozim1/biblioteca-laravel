@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Categoria\CategoriaRequest;
 use App\Models\Categoria;
-use Illuminate\Http\Request;
 
 class CategoriaController extends Controller
 {
@@ -18,43 +18,32 @@ class CategoriaController extends Controller
         return view('categorias.create');
     }
 
-    public function store(Request $request)
+    public function store(CategoriaRequest $request)
     {
-        $data = $request->validate([
-            'nome' => 'required|string|max:255',
-            'descricao' => 'nullable|string',
-        ]);
-
-        Categoria::create($data);
+        Categoria::create($request->validated());
         return redirect()->route('categorias.index')->with('success', 'Categoria criada.');
     }
 
-    public function show($id)
+    public function show(Categoria $categoria)
     {
-        $categoria = Categoria::with('livros')->findOrFail($id);
+        $categoria->load('livros');
         return view('categorias.show', compact('categoria'));
     }
 
-    public function edit($id)
+    public function edit(Categoria $categoria)
     {
-        $categoria = Categoria::findOrFail($id);
         return view('categorias.edit', compact('categoria'));
     }
 
-    public function update(Request $request, $id)
+    public function update(CategoriaRequest $request, Categoria $categoria)
     {
-        $categoria = Categoria::findOrFail($id);
-        $data = $request->validate([
-            'nome' => 'required|string|max:255',
-            'descricao' => 'nullable|string',
-        ]);
-        $categoria->update($data);
+        $categoria->update($request->validated());
         return redirect()->route('categorias.index')->with('success', 'Categoria atualizada.');
     }
 
-    public function destroy($id)
+    public function destroy(Categoria $categoria)
     {
-        Categoria::findOrFail($id)->delete();
+        $categoria->delete();
         return redirect()->route('categorias.index')->with('success', 'Categoria removida.');
     }
 }

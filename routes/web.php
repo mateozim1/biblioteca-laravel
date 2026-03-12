@@ -17,9 +17,11 @@ Route::post('register', [AuthController::class, 'register'])->name('register.pos
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware('auth')->group(function () {
-    Route::resource('autores', AutorController::class);
-    Route::resource('categorias', CategoriaController::class);
-    Route::resource('livros', LivroController::class);
-    Route::resource('locacoes', LocacaoController::class)->except(['edit','update']);
+    Route::resource('autores', AutorController::class)->parameters(['autores' => 'autor']);
+    Route::resource('categorias', CategoriaController::class)->parameters(['categorias' => 'categoria']);
+    Route::resource('livros', LivroController::class)->parameters(['livros' => 'livro']);
+    Route::resource('locacoes', LocacaoController::class)
+        ->parameters(['locacoes' => 'locacao'])
+        ->except(['edit', 'update']);
     Route::post('locacoes/{locacao}/devolver', [LocacaoController::class, 'devolver'])->name('locacoes.devolver');
 });

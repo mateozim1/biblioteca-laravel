@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Locacao;
+use App\Http\Requests\Locacao\StoreLocacaoRequest;
 use App\Models\Livro;
+use App\Models\Locacao;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class LocacaoController extends Controller
 {
     public function index()
     {
-        $locacoes = Locacao::with(['usuario','livro'])->paginate(10);
+        $locacoes = Locacao::with(['usuario', 'livro'])->paginate(10);
         return view('locacoes.index', compact('locacoes'));
     }
 
@@ -20,22 +20,18 @@ class LocacaoController extends Controller
     {
         $usuarios = User::all();
         $livros = Livro::where('quantidade_disponivel', '>', 0)->get();
-        return view('locacoes.create', compact('usuarios','livros'));
+        return view('locacoes.create', compact('usuarios', 'livros'));
     }
 
-    public function store(Request $request)
+    public function store(StoreLocacaoRequest $request)
     {
-        $data = $request->validate([
-            'usuario_id' => 'required|exists:users,id',
-            'livro_id' => 'required|exists:livros,id',
-            'data_devolucao' => 'required|date|after:today',
-        ]);
+        $data = $request->validated();
 
         return DB::transaction(function () use ($data) {
             $livro = Livro::lockForUpdate()->findOrFail($data['livro_id']);
 
             if ($livro->quantidade_disponivel <= 0) {
-                return back()->withErrors(['livro' => 'Livro indisponível para locação.'])->withInput();
+                return back()->withErrors(['livro' => 'Livro indisponivel para locacao.'])->withInput();
             }
 
             $already = Locacao::where('usuario_id', $data['usuario_id'])
@@ -44,41 +40,39 @@ class LocacaoController extends Controller
                 ->first();
 
             if ($already) {
-                return back()->withErrors(['usuario' => 'Usuário já possui este livro locado.'])->withInput();
+                return back()->withErrors(['usuario' => 'Usuario ja possui este livro locado.'])->withInput();
             }
 
-            $locacao = Locacao::create([
+            Locacao::create([
                 'usuario_id' => $data['usuario_id'],
                 'livro_id' => $data['livro_id'],
                 'data_locacao' => now()->toDateString(),
                 'data_devolucao' => $data['data_devolucao'],
-                'status' => 'ativa'
+                'status' => 'ativa',
             ]);
 
             $livro->decrement('quantidade_disponivel');
 
-            return redirect()->route('locacoes.index')->with('success', 'Locação criada.');
+            return redirect()->route('locacoes.index')->with('success', 'Locacao criada.');
         });
     }
 
-    public function show($id)
+    public function show(Locacao $locacao)
     {
-        $locacao = Locacao::with(['usuario','livro'])->findOrFail($id);
+        $locacao->load(['usuario', 'livro']);
         return view('locacoes.show', compact('locacao'));
     }
 
-    public function destroy($id)
+    public function destroy(Locacao $locacao)
     {
-        Locacao::findOrFail($id)->delete();
-        return redirect()->route('locacoes.index')->with('success', 'Locação removida.');
+        $locacao->delete();
+        return redirect()->route('locacoes.index')->with('success', 'Locacao removida.');
     }
 
-    public function devolver($id)
+    public function devolver(Locacao $locacao)
     {
-        $locacao = Locacao::findOrFail($id);
-
         if ($locacao->status !== 'ativa') {
-            return redirect()->route('locacoes.index')->with('error', 'Locação não está ativa.');
+            return redirect()->route('locacoes.index')->with('error', 'Locacao nao esta ativa.');
         }
 
         return DB::transaction(function () use ($locacao) {
@@ -87,7 +81,7 @@ class LocacaoController extends Controller
 
             $locacao->update([
                 'status' => 'devolvida',
-                'data_devolvido' => now()->toDateString()
+                'data_devolvido' => now()->toDateString(),
             ]);
 
             return redirect()->route('locacoes.index')->with('success', 'Livro devolvido com sucesso.');

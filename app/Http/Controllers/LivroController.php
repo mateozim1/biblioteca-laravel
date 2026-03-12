@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Livro;
+use App\Http\Requests\Livro\LivroRequest;
 use App\Models\Autor;
 use App\Models\Categoria;
-use Illuminate\Http\Request;
+use App\Models\Livro;
 
 class LivroController extends Controller
 {
@@ -22,60 +22,41 @@ class LivroController extends Controller
         return view('livros.create', compact('autores','categorias'));
     }
 
-    public function store(Request $request)
+    public function store(LivroRequest $request)
     {
-        $data = $request->validate([
-            'titulo' => 'required|string|max:255',
-            'autor_id' => 'required|exists:autores,id',
-            'categoria_id' => 'required|exists:categorias,id',
-            'ano_publicacao' => 'nullable|integer',
-            'quantidade_total' => 'required|integer|min:0',
-            'isbn' => 'nullable|string',
-        ]);
+        $data = $request->validated();
 
-        $data['quantidade_disponivel'] = $data['quantidade_total'] ?? 0;
+        $data['quantidade_disponivel'] = $data['quantidade_total'];
         Livro::create($data);
         return redirect()->route('livros.index')->with('success', 'Livro criado.');
     }
 
-    public function show($id)
+    public function show(Livro $livro)
     {
-        $livro = Livro::with(['autor','categoria','locacoes.usuario'])->findOrFail($id);
+        $livro->load(['autor', 'categoria', 'locacoes.usuario']);
         return view('livros.show', compact('livro'));
     }
 
-    public function edit($id)
+    public function edit(Livro $livro)
     {
-        $livro = Livro::findOrFail($id);
         $autores = Autor::all();
         $categorias = Categoria::all();
-        return view('livros.edit', compact('livro','autores','categorias'));
+        return view('livros.edit', compact('livro', 'autores', 'categorias'));
     }
 
-    public function update(Request $request, $id)
+    public function update(LivroRequest $request, Livro $livro)
     {
-        $livro = Livro::findOrFail($id);
-        $data = $request->validate([
-            'titulo' => 'required|string|max:255',
-            'autor_id' => 'required|exists:autores,id',
-            'categoria_id' => 'required|exists:categorias,id',
-            'ano_publicacao' => 'nullable|integer',
-            'quantidade_total' => 'required|integer|min:0',
-            'isbn' => 'nullable|string',
-        ]);
-
-        if (isset($data['quantidade_total'])) {
-            $diff = $data['quantidade_total'] - $livro->quantidade_total;
-            $livro->quantidade_disponivel = max(0, $livro->quantidade_disponivel + $diff);
-        }
+        $data = $request->validated();
+        $diff = $data['quantidade_total'] - $livro->quantidade_total;
+        $data['quantidade_disponivel'] = max(0, $livro->quantidade_disponivel + $diff);
 
         $livro->update($data);
         return redirect()->route('livros.index')->with('success', 'Livro atualizado.');
     }
 
-    public function destroy($id)
+    public function destroy(Livro $livro)
     {
-        Livro::findOrFail($id)->delete();
+        $livro->delete();
         return redirect()->route('livros.index')->with('success', 'Livro removido.');
     }
 }
